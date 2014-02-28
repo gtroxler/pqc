@@ -9,7 +9,7 @@ pqcd_SOURCES = pool.h version.h pqcd.conf.sample \
 	pqc.c pqc.h \
 	pool_type.h pool_ip.h pool_ip.c pqcd_hba.conf.sample pgpool.pam
 
-pqcd_LDADD = -lmemcached -levent
+pqcd_LDADD = -lmemcached -levent -lssl
 
 DEFS = @DEFS@ \
 	-DDEFAULT_CONFIGDIR=\"$(sysconfdir)\"

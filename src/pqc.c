@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <libmemcached/memcached.h>
+#include <openssl/md5.h>
 
 #include "pool.h"
 #include "pqc.h"
@@ -26,7 +27,7 @@ static char *buf = NULL;
 
 static int pqc_start_memcached(int);
 static int pqc_stop_memcached();
-static char *encode_key(const char *, char *, size_t);
+static char *encode_key(const char *, char *);
 
 /*
  * State flags combination:
@@ -261,27 +262,27 @@ pqc_buf_get(void)
 
 
 static char *
-encode_key(const char *s, char *buf, size_t buflen)
+encode_key(const char *buff, char *res)
 {
+  const char *hex = "0123456789abcdef";
+  MD5_CTX my_md5;
+  unsigned char hash[MD5_DIGEST_LENGTH];
+  char *r;
   int i;
 
-  memset(buf, 0, buflen);
+  MD5_Init(&my_md5);
+  MD5_Update(&my_md5, (const unsigned char*)buff, strlen((unsigned char *)buff));
+  MD5_Final(hash, &my_md5);
 
-  /* replace ' ' to '_'. */
-  for (i=0 ; i<strlen(s) ; i++)
-  {
-    if (i>=buflen)
-      break;
-
-    if ( s[i]==' ' || iscntrl(s[i]) )
-      buf[i] = '_';
-    else
-      buf[i] = s[i];
+  for (i = 0, r = res; i < MD5_DIGEST_LENGTH; i++) {
+    *r++ = hex[hash[i] >> 4];
+    *r++ = hex[hash[i] & 0xF];
   }
+  *r = '\0';
 
-  pool_debug("encode_key: `%s' -> `%s'", s, buf);
+  pool_debug("encode_key: `%s' -> `%s'", buff, res);
 
-  return buf;
+  return buff;
 }
 
 static void
@@ -313,7 +314,7 @@ dump_cache_data(const char *data, size_t len)
 int
 pqc_set_cache(POOL_CONNECTION *frontend, const char *query, const char *data, size_t datalen)
 {
-  char tmpkey[PQC_MAX_KEY];
+  char tmpkey[MD5_DIGEST_LENGTH*2+1];
 
   if ( !IsQueryCacheEnabled )
     return 0;
@@ -322,18 +323,18 @@ pqc_set_cache(POOL_CONNECTION *frontend, const char *query, const char *data, si
     return 0;
 
   pool_debug("pqc_set_cache: Query=%s", query);
-  dump_cache_data(data, datalen);
+//  dump_cache_data(data, datalen);
 
   if ( frontend!=NULL && frontend->database!=NULL )
   {
     char tmp[PQC_MAX_KEY];
 
     snprintf(tmp, sizeof(tmp), "%s %s", frontend->database, query);
-    encode_key(tmp, tmpkey, sizeof(tmpkey));
+    encode_key(tmp, tmpkey);
   }
   else
   {
-    encode_key(query, tmpkey, sizeof(tmpkey));
+    encode_key(query, tmpkey);
   }
 
   rc = memcached_set(memc, tmpkey, strlen(tmpkey), data, datalen, pool_config.query_cache_expiration, 0);
@@ -350,11 +351,11 @@ pqc_set_cache(POOL_CONNECTION *frontend, const char *query, const char *data, si
 }
 
 int
-pqc_get_cache(POOL_CONNECTION *frontend, const char *query, char **buf, size_t *len)
+pqc_get_cache(POOL_CONNECTION *frontend, const char *query, char **buff, size_t *len)
 {
   uint32_t flags2;
   char *ptr;
-  char tmpkey[PQC_MAX_KEY];
+  char tmpkey[MD5_DIGEST_LENGTH*2+1];
 
   if ( !IsQueryCacheEnabled )
     return 0;
@@ -367,11 +368,11 @@ pqc_get_cache(POOL_CONNECTION *frontend, const char *query, char **buf, size_t *
     char tmp[PQC_MAX_KEY];
 
     snprintf(tmp, sizeof(tmp), "%s %s", frontend->database, query);
-    encode_key(tmp, tmpkey, sizeof(tmpkey));
+    encode_key(tmp, tmpkey);
   }
   else
   {
-    encode_key(query, tmpkey, sizeof(tmpkey));
+    encode_key(query, tmpkey);
   }
 
   ptr = memcached_get(memc, tmpkey, strlen(tmpkey), len, &flags2, &rc);
@@ -382,11 +383,11 @@ pqc_get_cache(POOL_CONNECTION *frontend, const char *query, char **buf, size_t *
     return 0;
   }
 
-  memcpy(buf, ptr, *len);
+  memcpy(buff, ptr, *len);
   free(ptr);
 
   pool_debug("pqc_get_cache: Query=%s", query);
-  dump_cache_data(buf, *len);
+//  dump_cache_data(buff, *len);
 
   return 1;
 }

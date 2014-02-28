@@ -57,7 +57,7 @@ pqc_init(int run_as_daemon)
     return 0;
   }
 
-  servers = memcached_server_list_append(NULL, "127.0.0.1", 11211, &rc);
+  servers = memcached_server_list_append(NULL, pool_config.memcached_host, pool_config.memcached_port, &rc);
   if (rc != MEMCACHED_SUCCESS)
   {
     pool_debug("pqc_init: memcached_server_list_append() failed.");

@@ -143,6 +143,8 @@ int pool_get_config(char *confpath)
 	pool_config.memcached_bin = DEFAULT_MEMCACHED_BIN;
 	pool_config.query_cache_mode = 1;
 	pool_config.query_cache_expiration = 30;
+	pool_config.memcached_host = DEFAULT_MEMCACHED_HOST;
+	pool_config.memcached_port = DEFAULT_MEMCACHED_PORT;
 #define PARSE_ERROR()		pool_error("pool_config: parse error at line %d '%s'", Lineno, yytext)
 
 	/* open config file */
@@ -685,6 +687,33 @@ int pool_get_config(char *confpath)
 				return(-1);
 			}
 			pool_config.query_cache_expiration = v;
+		}
+       	else if (!strcmp(key, "memcached_host"))
+		{
+			char *str;
+
+			if (token != POOL_STRING && token != POOL_UNQUOTED_STRING && token != POOL_KEY)
+			{
+				PARSE_ERROR();
+				return(-1);
+			}
+			str = extract_string(yytext, token);
+			if (str == NULL)
+			{
+				return(-1);
+			}
+			pool_config.memcached_host = str;
+		}
+       	else if (!strcmp(key, "memcached_port"))
+		{
+			int v = atoi(yytext);
+
+			if (v < 0)
+			{
+				pool_error("pool_config: invalid value %s for %s", yytext, key);
+				return(-1);
+			}
+			pool_config.memcached_port = v;
 		}
 	}
 

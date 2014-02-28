@@ -53,6 +53,9 @@
 /* memcached executable */
 #define DEFAULT_MEMCACHED_BIN "/usr/local/bin/memcached"
 
+#define DEFAULT_MEMCACHED_HOST "127.0.0.1"
+#define DEFAULT_MEMCACHED_PORT 11211
+
 /* pid file name */
 #define PID_FILE_NAME "pqcd.pid"
 
@@ -169,6 +172,8 @@ typedef struct {
 	char *memcached_bin;		/* a path name to the memcached executable. */
 	int query_cache_mode;		/* 1:Active-cache mode 0:Passive-cache mode */
 	int query_cache_expiration;	/* timeout value (in seconds) to expire a query cache */
+	char *memcached_host;
+	int memcached_port;
 } POOL_CONFIG;
 
 #define MAX_PASSWORD_SIZE		1024

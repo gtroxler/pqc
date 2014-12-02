@@ -9,7 +9,7 @@
 #include <libmemcached/memcached.h>
 
 #define PQC_MAX_KEY   MEMCACHED_MAX_KEY
-#define PQC_MAX_VALUE 8192
+#define PQC_MAX_VALUE (1024*1024) 
 #define PQC_MAX_CACHELEN (1024*1024)
 
 extern int IsQueryCacheEnabled;

@@ -177,10 +177,26 @@ pqc_check_cache_avail(POOL_CONNECTION *frontend, const char *query)
   return 1;
 }
 
+
+uint64_t
+pqc_create_query_hash(const char *query)
+{
+	uint64_t hash = 5381;
+	int c;
+	while( c = *query++){
+	  hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	}
+	return hash;
+}
+
 int
 pqc_push_current_query(const char *query)
 {
+  char buff[21];
+  uint64_t hash = pqc_create_query_hash(query);
+  sprintf(buff, "%" PRIu64, hash);
   strncpy(cache_key, query, sizeof(cache_key));
+  strncpy(cache_key, buff, strlen(buff));
 
   return 1;
 }

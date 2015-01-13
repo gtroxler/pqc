@@ -192,11 +192,8 @@ pqc_create_query_hash(const char *query)
 int
 pqc_push_current_query(const char *query)
 {
-  char buff[21];
-  uint64_t hash = pqc_create_query_hash(query);
-  sprintf(buff, "%" PRIu64, hash);
   strncpy(cache_key, query, sizeof(cache_key));
-  strncpy(cache_key, buff, strlen(buff));
+
 
   return 1;
 }
@@ -344,7 +341,11 @@ pqc_set_cache(POOL_CONNECTION *frontend, const char *query, const char *data, si
   {
     char tmp[PQC_MAX_KEY];
 
-    snprintf(tmp, sizeof(tmp), "%s %s", frontend->database, query);
+    char buff[21];
+    uint64_t hash = pqc_create_query_hash(query);
+    sprintf(buff, "%" PRIu64, hash);
+
+    snprintf(tmp, sizeof(tmp), "%s %s %s", frontend->database, buff, query);
     encode_key(tmp, tmpkey, sizeof(tmpkey));
   }
   else
@@ -382,7 +383,11 @@ pqc_get_cache(POOL_CONNECTION *frontend, const char *query, char **buf, size_t *
   {
     char tmp[PQC_MAX_KEY];
 
-    snprintf(tmp, sizeof(tmp), "%s %s", frontend->database, query);
+    char buff[21];
+    uint64_t hash = pqc_create_query_hash(query);
+    sprintf(buff, "%" PRIu64, hash);
+
+    snprintf(tmp, sizeof(tmp), "%s %s %s", frontend->database, buff, query);
     encode_key(tmp, tmpkey, sizeof(tmpkey));
   }
   else

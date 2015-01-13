@@ -144,3 +144,5 @@ enable_pool_hba = true
 memcached_bin = '/usr/local/bin/memcached'
 query_cache_mode = 'active'
 query_cache_expiration = 30
+memcached_host = 'localhost'
+memcached_port = 11211
